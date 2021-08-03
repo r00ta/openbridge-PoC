@@ -27,6 +27,10 @@ public class Subscription {
     @JsonProperty("endpoint")
     private String endpoint;
 
+    @Column(name = "transformationTemplate", nullable = true)
+    @JsonProperty("transformationTemplate")
+    private String transformationTemplate;
+
     @ManyToOne(optional = false, fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Topic topic;
 
@@ -44,11 +48,19 @@ public class Subscription {
         this.endpoint = endpoint;
     }
 
+    public void setTransformationTemplate(String transformationTemplate) {
+        this.transformationTemplate = transformationTemplate;
+    }
+
     public String getEndpoint() {
         return endpoint;
     }
 
     public String getName() {
         return name;
+    }
+
+    public String getTransformationTemplate() {
+        return transformationTemplate;
     }
 }

@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -16,7 +17,9 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.developer.CloudEventUtils;
 import com.redhat.developer.EventService;
 import com.redhat.developer.TopicService;
@@ -53,11 +56,26 @@ public class TopicAPI {
     }
 
     @POST
+    @Path("/{topicName}/events")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response publicEvent(@QueryParam("topicName") String topicName, String body) throws JsonProcessingException {
+        JsonNode jsonNode = new ObjectMapper().readTree(body);
+        boolean success = eventService.sendEvent(jsonNode, topicName);
+        if (success){
+            return Response.accepted().build();
+        }
+        else{
+            return Response.status(400).build();
+        }
+    }
+
+    @DELETE
     @Path("/{topicName}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response publicEvent(@QueryParam("topicName") String topicName, JsonNode body){
-        boolean success = eventService.sendEvent(body, topicName);
+    public Response deleteTopic(@QueryParam("topicName") String topicName){
+        boolean success = topicService.deleteTopic(topicName);
         if (success){
             return Response.accepted().build();
         }
@@ -81,5 +99,19 @@ public class TopicAPI {
     public Response createSubscription(@PathParam("topicName") String topicName, SubscriptionRequest subscriptionRequest){
         Subscription subscription = topicService.createSubscription(topicName, subscriptionRequest);
         return Response.ok(subscription).build();
+    }
+
+    @DELETE
+    @Path("/{topicName}/subscriptions/{subscriptionName}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response deleteSubscription(@PathParam("topicName") String topicName, @PathParam("subscriptionName") String subscriptionName){
+        boolean success = topicService.deleteSubscription(topicName, subscriptionName);
+        if (success){
+            return Response.accepted().build();
+        }
+        else{
+            return Response.status(400).build();
+        }
     }
 }

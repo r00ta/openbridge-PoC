@@ -14,9 +14,13 @@ public interface TopicService {
 
     Topic getTopic(String topicName);
 
+    boolean deleteTopic(String topicName);
+
     List<Topic> getAll();
 
     Subscription createSubscription(String topicName, SubscriptionRequest subscriptionRequest);
 
     Set<Subscription> getSubscriptions(String topicName);
+
+    boolean deleteSubscription(String topicName, String subscriptionName);
 }

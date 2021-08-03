@@ -39,6 +39,12 @@ public class TopicServiceImpl implements TopicService {
 
     @Override
     @Transactional
+    public boolean deleteTopic(String topicName){
+        return topicDAO.deleteById(topicName);
+    }
+
+    @Override
+    @Transactional
     public List<Topic> getAll() {
         return topicDAO.listAll();
     }
@@ -63,5 +69,16 @@ public class TopicServiceImpl implements TopicService {
     public Set<Subscription> getSubscriptions(String topicName) {
         Topic topic = topicDAO.findById(topicName);
         return topic.getSubscriptions();
+    }
+
+    @Override
+    @Transactional
+    public boolean deleteSubscription(String topicName, String subscriptionName){
+        Topic topic = topicDAO.findById(topicName);
+        Subscription subscription = topic.getSubscriptions().stream().filter(x -> x.getName().equals(subscriptionName)).findFirst().get();
+        topic.getSubscriptions().remove(subscription);
+        subscription.setTopic(null);
+        topicDAO.getEntityManager().merge(topic);
+        return true;
     }
 }

@@ -2,6 +2,7 @@ package com.redhat.developer;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -9,6 +10,7 @@ import javax.inject.Inject;
 import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.developer.consumer.EventConsumer;
@@ -17,6 +19,8 @@ import com.redhat.developer.models.Topic;
 import com.redhat.developer.producer.EventProducer;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.jackson.JsonCloudEventData;
+import io.quarkus.qute.Engine;
+import io.quarkus.qute.Template;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.client.WebClient;
@@ -26,6 +30,8 @@ import org.jboss.logging.Logger;
 @ApplicationScoped
 public class EventServiceImpl implements EventService {
     private final Logger logger = Logger.getLogger(EventServiceImpl.class);
+
+    private static final Engine engine = Engine.builder().addDefaults().build();
 
     @Inject
     EventProducer producer;
@@ -46,7 +52,21 @@ public class EventServiceImpl implements EventService {
             logger.info(String.format("[CE id = %s] Processing subscription %s with endpoint %s", cloudEvent.getId(), subscription.getName(), subscription.getEndpoint()));
             WebClient client = getClient(subscription.getEndpoint());
             JsonCloudEventData data = (JsonCloudEventData) cloudEvent.getData();
-            client.post(getEndpoint(subscription.getEndpoint())).sendJson(data.getNode())
+            JsonNode dataToSend = data.getNode();
+            if (subscription.getTransformationTemplate() != null && !subscription.getTransformationTemplate().equals("")){
+                Template helloTemplate = engine.parse(subscription.getTransformationTemplate());
+                try {
+                    dataToSend = CloudEventUtils.Mapper.mapper().readTree(helloTemplate.data(
+                            CloudEventUtils.Mapper.mapper().convertValue(data.getNode(), new TypeReference<Map<String, Object>>(){})
+                    ).render());
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
+                logger.info(dataToSend);
+            }
+            client.post(
+                    getEndpoint(subscription.getEndpoint()))
+                    .sendJson(dataToSend)
                     .onComplete(x ->  logger.info(String.format("[CE id = %s] Customer endpoint replied with %d for subscription %s", cloudEvent.getId(), x.result().statusCode(), subscription.getName())));
         }
         logger.info(String.format("[CE id = %s] All subscriptions have been processed", cloudEvent.getId()));

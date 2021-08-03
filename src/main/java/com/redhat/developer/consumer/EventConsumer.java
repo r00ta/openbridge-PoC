@@ -24,14 +24,20 @@ public class EventConsumer {
     @Blocking
     @Incoming("events-in")
     public CompletionStage<Void> consume(Message<String> message){
-        logger.info("New event to be processed by event consumer");
-        Optional<CloudEvent> cloudEvent = CloudEventUtils.decode(message.getPayload());
-        if (cloudEvent.isEmpty()){
-            logger.warn("An empty cloud event has been received, sending nack");
-            return message.nack(new RuntimeException("Could not deserialize cloudevent"));
+        try{
+            logger.info("New event to be processed by event consumer");
+            Optional<CloudEvent> cloudEvent = CloudEventUtils.decode(message.getPayload());
+            if (cloudEvent.isEmpty()){
+                logger.warn("An empty cloud event has been received, sending nack");
+                return message.nack(new RuntimeException("Could not deserialize cloudevent"));
+            }
+            eventService.process(cloudEvent.get());
+            logger.info("New event to be processed by event consumer - COMPLETED");
+            return message.ack();
         }
-        eventService.process(cloudEvent.get());
-        logger.info("New event to be processed by event consumer - COMPLETED");
-        return message.ack();
+        catch (Exception e){
+            logger.warn("Exception " + e);
+            return message.ack();
+        }
     }
 }

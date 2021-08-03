@@ -13,10 +13,14 @@ public class SubscriptionRequest {
     @JsonProperty("endpoint")
     private String endpoint;
 
+    @JsonProperty("transformationTemplate")
+    private String transformationTemplate;
+
     public Subscription toEntity(){
         Subscription subscription = new Subscription();
         subscription.setName(name);
         subscription.setEndpoint(endpoint);
+        subscription.setTransformationTemplate(transformationTemplate);
 
         return subscription;
     }
