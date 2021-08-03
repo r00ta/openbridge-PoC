@@ -22,7 +22,7 @@ mvn clean compile quarkus:dev
 
 You can then access the swagger-ui at `http://localhost:8080/q/swagger-ui` and create a topic with the POST `/topic` endpoint. You can then create a subscription for a topic 
 with the endpoint POST `/topic/{topicName}/subscriptions`. I'd suggest to use the website `https://webhook.site/` to create tmp webhooks that you can use in the subscription. With this endpoint you have the possibility to specify how to transform the original event with a qute template. 
-At the end, you can publish some JSON events with the endpoint POST `/topic/{topicName}/events` and check that you have received them in the applications you subscribed.
+At the end, you can publish some JSON events with the endpoint POST `/topic/{topicName}/events` and check that you have received them in the applications you subscribed. The templating is optional, if you omit it, you will get the "original" event as it is
 
 ## Example
 
