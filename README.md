@@ -1,5 +1,11 @@
 # OpenBridge proof of concept
 
+## Architecture 
+
+High level architecture
+
+![ob](https://user-images.githubusercontent.com/18282531/127902215-8c57f61d-c210-4560-acc0-3fe455d2e366.png)
+
 ## Development mode
 
 In order to start playing with this PoC you have to start docker compose with 
