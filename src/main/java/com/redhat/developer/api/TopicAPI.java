@@ -20,15 +20,12 @@ import javax.ws.rs.core.Response;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.redhat.developer.CloudEventUtils;
 import com.redhat.developer.EventService;
 import com.redhat.developer.TopicService;
 import com.redhat.developer.models.Subscription;
 import com.redhat.developer.models.Topic;
-import com.redhat.developer.producer.EventProducer;
 import com.redhat.developer.requests.SubscriptionRequest;
 import com.redhat.developer.requests.TopicRequest;
-import io.cloudevents.CloudEvent;
 
 @Path("/topics")
 public class TopicAPI {
@@ -75,6 +72,9 @@ public class TopicAPI {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response deleteTopic(@QueryParam("topicName") String topicName){
+        if (topicName.equals("default")){
+            return Response.status(400, "default topic is reserved.").build();
+        }
         boolean success = topicService.deleteTopic(topicName);
         if (success){
             return Response.accepted().build();
