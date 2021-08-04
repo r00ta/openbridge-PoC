@@ -5,7 +5,10 @@ import java.util.List;
 import javax.persistence.Basic;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
@@ -31,6 +34,11 @@ public class Subscription {
     @JsonProperty("transformationTemplate")
     private String transformationTemplate;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Column(name = "filters", nullable = true)
+    @JsonProperty("filters")
+    private List<Filter> filters;
+
     @ManyToOne(optional = false, fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Topic topic;
 
@@ -52,6 +60,10 @@ public class Subscription {
         this.transformationTemplate = transformationTemplate;
     }
 
+    public void setFilters(List<Filter> filters) {
+        this.filters = filters;
+    }
+
     public String getEndpoint() {
         return endpoint;
     }
@@ -62,5 +74,9 @@ public class Subscription {
 
     public String getTransformationTemplate() {
         return transformationTemplate;
+    }
+
+    public List<Filter> getFilters() {
+        return filters;
     }
 }

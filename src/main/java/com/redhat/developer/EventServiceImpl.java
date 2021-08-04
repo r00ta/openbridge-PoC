@@ -14,6 +14,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.developer.consumer.EventConsumer;
+import com.redhat.developer.models.Filter;
 import com.redhat.developer.models.Subscription;
 import com.redhat.developer.models.Topic;
 import com.redhat.developer.producer.EventProducer;
@@ -40,6 +41,9 @@ public class EventServiceImpl implements EventService {
     TopicService topicService;
 
     @Inject
+    FEELEvaluator feelEvaluator;
+
+    @Inject
     Vertx vertx;
 
     @Override
@@ -53,12 +57,17 @@ public class EventServiceImpl implements EventService {
             WebClient client = getClient(subscription.getEndpoint());
             JsonCloudEventData data = (JsonCloudEventData) cloudEvent.getData();
             JsonNode dataToSend = data.getNode();
+            Map<String, Object> originalMap = CloudEventUtils.Mapper.mapper().convertValue(data.getNode(), new TypeReference<Map<String, Object>>(){});
+
+            if (!checkFilters(subscription, originalMap)){
+                logger.info("Filter does not match");
+                continue;
+            }
+
             if (subscription.getTransformationTemplate() != null && !subscription.getTransformationTemplate().equals("")){
                 Template helloTemplate = engine.parse(subscription.getTransformationTemplate());
                 try {
-                    dataToSend = CloudEventUtils.Mapper.mapper().readTree(helloTemplate.data(
-                            CloudEventUtils.Mapper.mapper().convertValue(data.getNode(), new TypeReference<Map<String, Object>>(){})
-                    ).render());
+                    dataToSend = CloudEventUtils.Mapper.mapper().readTree(helloTemplate.data(originalMap).render());
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
                 }
@@ -76,6 +85,16 @@ public class EventServiceImpl implements EventService {
     public boolean sendEvent(JsonNode body, String topic) {
         CloudEvent cloudEvent = CloudEventUtils.build(UUID.randomUUID().toString(), topic, URI.create("http://localhost"), JsonNode.class.getName(), "subject", body).get();
         return producer.sendEvent(cloudEvent);
+    }
+
+    private boolean checkFilters(Subscription subscription, Map<String, Object> data){
+        for (Filter filter : subscription.getFilters()){
+            String template = feelEvaluator.buildFilter(filter.getKey(), feelEvaluator.convertType(filter.getType()), filter.getValue());
+            if (!feelEvaluator.evaluateFilter(template, data)){
+                return false;
+            }
+        }
+        return true;
     }
 
     private WebClient getClient(String url){
