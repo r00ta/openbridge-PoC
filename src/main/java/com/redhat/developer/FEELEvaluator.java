@@ -6,9 +6,7 @@ import com.redhat.developer.models.FilterType;
 
 public interface FEELEvaluator {
 
-    String buildFilter(String key, String operator, String value);
+    String buildFilter(String key, FilterType operator, String value);
 
     boolean evaluateFilter(String template, Map<String, Object> data);
-
-    String convertType(FilterType filterType);
 }

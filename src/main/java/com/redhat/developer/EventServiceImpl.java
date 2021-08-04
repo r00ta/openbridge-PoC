@@ -89,7 +89,7 @@ public class EventServiceImpl implements EventService {
 
     private boolean checkFilters(Subscription subscription, Map<String, Object> data){
         for (Filter filter : subscription.getFilters()){
-            String template = feelEvaluator.buildFilter(filter.getKey(), feelEvaluator.convertType(filter.getType()), filter.getValue());
+            String template = feelEvaluator.buildFilter(filter.getKey(), filter.getType(), filter.getValue());
             if (!feelEvaluator.evaluateFilter(template, data)){
                 return false;
             }

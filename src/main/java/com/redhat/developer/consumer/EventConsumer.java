@@ -24,7 +24,7 @@ public class EventConsumer {
     @Blocking
     @Incoming("events-in")
     public CompletionStage<Void> consume(Message<String> message){
-//        try{
+        try{
             logger.info("New event to be processed by event consumer");
             Optional<CloudEvent> cloudEvent = CloudEventUtils.decode(message.getPayload());
             if (cloudEvent.isEmpty()){
@@ -34,10 +34,10 @@ public class EventConsumer {
             eventService.process(cloudEvent.get());
             logger.info("New event to be processed by event consumer - COMPLETED");
             return message.ack();
-//        }
-//        catch (Exception e){
-//            logger.warn("Exception " + e);
-//            return message.ack();
-//        }
+        }
+        catch (Exception e){
+            logger.warn("Exception " + e);
+            return message.ack();
+        }
     }
 }
