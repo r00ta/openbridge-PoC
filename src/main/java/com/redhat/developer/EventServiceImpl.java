@@ -1,20 +1,16 @@
 package com.redhat.developer;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.redhat.developer.consumer.EventConsumer;
-import com.redhat.developer.models.Filter;
+import com.redhat.developer.models.filters.Filter;
 import com.redhat.developer.models.Subscription;
 import com.redhat.developer.models.Topic;
 import com.redhat.developer.producer.EventProducer;
@@ -23,7 +19,6 @@ import io.cloudevents.jackson.JsonCloudEventData;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
 import io.vertx.core.Vertx;
-import io.vertx.core.json.Json;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 import org.jboss.logging.Logger;
@@ -88,9 +83,11 @@ public class EventServiceImpl implements EventService {
     }
 
     private boolean checkFilters(Subscription subscription, Map<String, Object> data){
-        for (Filter filter : subscription.getFilters()){
-            String template = feelEvaluator.buildFilter(filter.getKey(), filter.getType(), filter.getValue());
-            if (!feelEvaluator.evaluateFilter(template, data)){
+        if (subscription.getFiltersTemplates() == null){
+            return true;
+        }
+        for (String filter : subscription.getFiltersTemplates()){
+            if (!feelEvaluator.evaluateFilter(filter, data)){
                 return false;
             }
         }

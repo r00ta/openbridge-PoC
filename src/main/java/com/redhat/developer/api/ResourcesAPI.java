@@ -1,16 +1,20 @@
 package com.redhat.developer.api;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-//@Path("/resources")
+@Path("/resources")
 public class ResourcesAPI {
+    @GET
+    @Path("/filters")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getFilters(){
+        return Response.ok().build();
+    }
+
 //    @GET
 //    @Produces(MediaType.APPLICATION_JSON)
 //    public Response getResources(){

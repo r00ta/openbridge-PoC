@@ -87,5 +87,18 @@ public class FilterTest {
         Object result = feel.evaluate(expr, map);
         Assertions.assertEquals("valid", result);
     }
-
+    @Test
+    public void numberInRange(){
+        String expr = "if\n" +
+                "(data.age in [1..29]) or (data.age in [44..46])\n" +
+                "then\n" +
+                "    \"valid\"\n" +
+                "else\n" +
+                "    \"not valid\"";
+        FEEL feel = FEEL.newInstance();
+        Map<String, Object> map = new HashMap<>();
+        map.put("data", Collections.singletonMap("age", 3.5));
+        Object result = feel.evaluate(expr, map);
+        Assertions.assertEquals("valid", result);
+    }
 }

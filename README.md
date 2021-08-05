@@ -27,39 +27,56 @@ At the end, you can publish some JSON events with the endpoint POST `/topic/{top
 ## Templating
 
 With the endpoint POST `/topic/{topicName}/subscriptions` you can create subscriptions and perform two kind of operations before eventually receive the event to your endpoint: 
-- Filter: you can filter the events using some operators like `CONTAINS`, `NOT_CONTAINS`, `IN`, `NOT_IN`, `EQUALS`. For example with the following subscription
+- Filter: you can filter the events using some operators like `NumberIn`, `NumberInRange`, `NumberLessThan`, `NumberGreatherThanOrEquals`, `NumberLessThan`, `NumberLessThanOrEquals`, `NumberNotIn`, `NumberNotInRange`, `StringBeginsWith`, `StringContains`, `StringEndsWith`, `StringEquals`, `StringIn`, `StringNotBeginsWith`, `StringNotContains`, `StringNotEndsWith`, `StringNotIn`, `BoolEquals`. 
+  For example with the following subscription. Documentation for each filter is TO BE DONE. 
+  If you specify multiple filters, they are ANDed. You can only specify OR conditions within the same filter: for example with the following request.
 ```json
 {
   "endpoint": "https://webhook.site/ce12f81e-9eff-4a26-83ee-17c65bc25d1c",
   "name": "prova1",
   "filters": [
     {
-      "type": "CONTAINS",
+      "type": "StringContains",
       "key": "name",
-      "value": "opo"
+      "values": ["opo", "arco"]
     }
   ]
 }
 ```
-you will receive only those events that contain the string `opo` in the `name` key. You can navigate in the object with the dot notation. For example with
+you will receive only those events that contain the string `opo` OR `arco` in the `name` key. 
+
+For those operators that accept only one parameter, use `value` instead of `values` for example: 
+```json
+{
+  "endpoint": "https://webhook.site/ce12f81e-9eff-4a26-83ee-17c65bc25d1c",
+  "name": "prova1",
+  "filters": [
+    {
+      "type": "StringEquals",
+      "key": "name",
+      "value": "jacopo"
+    }
+  ]
+}
+```
+
+You can navigate in the object with the dot notation. For example with
 
 ```json 
 {
   "endpoint": "https://webhook.site/ce12f81e-9eff-4a26-83ee-17c65bc25d1c",
   "name": "prova1",
-  "transformationTemplate": "{\"{name}\": \"{surename}\"}",
   "filters": [
     {
-      "type": "IN",
-      "key": "data.name",
-      "value": "[\"jacopo\", \"marco\"]"
+      "type": "NumberNotInRange",
+      "key": "data.age",
+      "value": "[[18,30], [60, 80]]"
     }
   ]
 }
 ```
 
-you will receive only those events that contains `jacopo` or `marco` in the object `data.list` (for example this is a valid event that you would receive`{"data": {"name": "jacopo"}}`).
-The syntax for the other operands is trivial and left to the imagination of the reader :) 
+you will receive only those events that contains `data.age` within `18` and `30` OR between `60` and `80` (for example this is a valid event that you would receive`{"data": {"age": 20}}`).
 
 - Templating: you can specify a new template to transform the original event to a new json. For example the following subscription 
 ```json
@@ -91,9 +108,9 @@ create a subscription with the endpoint POST `/topic/test/subscriptions` and the
   "transformationTemplate": "{\"{name}\": \"{surename}\"}",
   "filters": [
     {
-      "type": "CONTAINS",
+      "type": "StringContains",
       "key": "name",
-      "value": "opo"
+      "value": ["opo"]
     }
   ]
 }
