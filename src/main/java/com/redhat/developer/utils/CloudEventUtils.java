@@ -1,29 +1,21 @@
-package com.redhat.developer;
+package com.redhat.developer.utils;
 
-
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import io.cloudevents.jackson.JsonCloudEventData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
+import com.redhat.developer.models.RegistryEvent;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.builder.CloudEventBuilder;
+import io.cloudevents.jackson.JsonCloudEventData;
 import io.cloudevents.jackson.JsonFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CloudEventUtils {
 
@@ -32,12 +24,14 @@ public class CloudEventUtils {
     public static final String UNKNOWN_SOURCE_URI_STRING = urlEncodedStringFrom("__UNKNOWN_SOURCE__")
             .orElseThrow(IllegalStateException::new);
 
-    public static Optional<CloudEvent> build(String id, String topic, URI source, String type, String subject, JsonNode data) {
+    public static Optional<CloudEvent> build(String id, String topic, RegistryEvent registryEvent, URI source, String type, String subject, JsonNode data) {
             CloudEventBuilder builder = CloudEventBuilder.v1()
                     .withId(id)
                     .withSource(source)
                     .withType(type)
                     .withExtension("topic", topic)
+                    .withExtension("mygroupid", registryEvent.getGroupId())
+                    .withExtension("myeventid", registryEvent.getEventId())
                     .withData(JsonCloudEventData.wrap(data));
 
             if (subject != null) {

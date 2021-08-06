@@ -24,9 +24,28 @@ You can then access the swagger-ui at `http://localhost:8080/q/swagger-ui` and c
 with the endpoint POST `/topic/{topicName}/subscriptions`. I'd suggest to use the website `https://webhook.site/` to create tmp webhooks that you can use in the subscription. With this endpoint you have the possibility to specify how to transform the original event with a qute template. 
 At the end, you can publish some JSON events with the endpoint POST `/topic/{topicName}/events` and check that you have received them in the applications you subscribed. The templating is optional, if you omit it, you will get the "original" event as it is
 
-## Templating
+## Features
+
+You must deploy Apicuro event registry and set the `APICURIO_URL` environment variable accordingly (default is `http://localhost:8081`).
+
+**You must register your event type as well, Openbridge will discard all the events that are not registered on the registry.**
 
 With the endpoint POST `/topic/{topicName}/subscriptions` you can create subscriptions and perform two kind of operations before eventually receive the event to your endpoint: 
+- Event type filter: you can specify what are the events you will observe using the following syntax:
+  
+```json
+{
+  "endpoint": "https://webhook.site/ce12f81e-9eff-4a26-83ee-17c65bc25d1c",
+  "name": "jrota-sub",
+  "registryEvents": [
+    {
+      "eventId": "test",
+      "groupId": "r00ta"
+    }
+  ]
+}
+```
+
 - Filter: you can filter the events using some operators like `NumberIn`, `NumberInRange`, `NumberLessThan`, `NumberGreatherThanOrEquals`, `NumberLessThan`, `NumberLessThanOrEquals`, `NumberNotIn`, `NumberNotInRange`, `StringBeginsWith`, `StringContains`, `StringEndsWith`, `StringEquals`, `StringIn`, `StringNotBeginsWith`, `StringNotContains`, `StringNotEndsWith`, `StringNotIn`, `BoolEquals`. 
   For example with the following subscription. Documentation for each filter is TO BE DONE. 
   If you specify multiple filters, they are ANDed. You can only specify OR conditions within the same filter: for example with the following request.
@@ -91,6 +110,33 @@ would transform the event `{"name": "jacopo", "surename": "rota"}` into `{"jacop
 
 ## Example
 
+After having started the `docker-compose` services, open `http://localhost:8081` and register a new event with `groupId: r00ta` and `eventId: test` with the following payload
+
+```json
+{
+  "$id": "https://example.com/person.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Person",
+  "type": "object",
+  "properties": {
+    "firstName": {
+      "type": "string",
+      "description": "The person's first name."
+    },
+    "lastName": {
+      "type": "string",
+      "description": "The person's last name."
+    },
+    "age": {
+      "description": "Age in years which must be equal to or greater than zero.",
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": ["firstName", "lastName", "age"]
+}
+```
+
 Create a topic using the endpoint POST `/topic` with the body 
 
 ```json
@@ -104,13 +150,19 @@ create a subscription with the endpoint POST `/topic/test/subscriptions` and the
 ```json
 {
   "endpoint": "https://webhook.site/ce12f81e-9eff-4a26-83ee-17c65bc25d1c",
-  "name": "prova1",
-  "transformationTemplate": "{\"{name}\": \"{surename}\"}",
   "filters": [
     {
+      "key": "firstName",
       "type": "StringContains",
-      "key": "name",
-      "value": ["opo"]
+      "values": ["opo", "co"]
+    }
+  ],
+  "name": "jrota-sub",
+  "transformationTemplate": "{\"{firstName}\": \"{lastName}\"}",
+  "registryEvents": [
+    {
+      "eventId": "test",
+      "groupId": "r00ta"
     }
   ]
 }
@@ -119,7 +171,13 @@ create a subscription with the endpoint POST `/topic/test/subscriptions` and the
 and then send the event with the endpoint POST `/topic/test/events` and the body
 
 ```json 
-{"name": "jacopo", "surename": "rota"}
+{
+  "event": "{\"firstName\": \"jacopo\", \"lastName\": \"rota\", \"age\": 20}",
+  "type": {
+    "eventId": "test",
+    "groupId": "r00ta"
+  }
+}
 ```
 
 the event received by the webhook would look like 

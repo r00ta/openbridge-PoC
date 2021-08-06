@@ -3,6 +3,7 @@ package com.redhat.developer;
 import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
+
 import com.redhat.developer.models.filters.FiltersConstants;
 import org.kie.dmn.feel.FEEL;
 

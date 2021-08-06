@@ -1,6 +1,5 @@
 package com.redhat.developer.models;
 
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -56,6 +55,11 @@ public class Subscription {
     @JsonIgnore
     private Set<String> filtersTemplates;
 
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Column(name = "registryEvents", nullable = true)
+    private Set<RegistryEvent> registryEvents;
+
     @ManyToOne(optional = false, fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Topic topic;
 
@@ -85,6 +89,10 @@ public class Subscription {
         this.filtersTemplates = filtersTemplates;
     }
 
+    public void setRegistryEvents(Set<RegistryEvent> registryEvents) {
+        this.registryEvents = registryEvents;
+    }
+
     public String getEndpoint() {
         return endpoint;
     }
@@ -107,6 +115,10 @@ public class Subscription {
 
     public void setFilters(Set<Filter> filters) {
         this.filters = filters;
+    }
+
+    public Set<RegistryEvent> getRegistryEvents() {
+        return registryEvents;
     }
 
     @JsonProperty("filters")

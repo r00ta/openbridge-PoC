@@ -1,20 +1,14 @@
 package com.redhat.developer.producer;
 
-import java.net.URI;
 import java.util.Optional;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-import com.redhat.developer.CloudEventUtils;
-import com.redhat.developer.consumer.EventConsumer;
-import io.smallrye.reactive.messaging.ce.OutgoingCloudEventMetadata;
-import io.smallrye.reactive.messaging.kafka.Record;
+import com.redhat.developer.utils.CloudEventUtils;
+import io.cloudevents.CloudEvent;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.eclipse.microprofile.reactive.messaging.Outgoing;
-import io.cloudevents.CloudEvent;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped

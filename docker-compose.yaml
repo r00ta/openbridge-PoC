@@ -37,3 +37,9 @@ services:
       POSTGRES_DB: ob
     ports:
       - "5432:5432"
+
+  apicurio:
+    image: apicurio/apicurio-registry-mem:2.0.1.Final
+    container_name: apicurio
+    ports:
+      - 8081:8080

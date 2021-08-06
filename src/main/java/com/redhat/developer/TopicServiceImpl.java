@@ -7,13 +7,10 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.developer.dao.SubscriptionDAO;
 import com.redhat.developer.dao.TopicDAO;
 import com.redhat.developer.models.Subscription;
 import com.redhat.developer.models.Topic;
-import com.redhat.developer.models.filters.Filter;
 import com.redhat.developer.requests.SubscriptionRequest;
 import com.redhat.developer.requests.TopicRequest;
 

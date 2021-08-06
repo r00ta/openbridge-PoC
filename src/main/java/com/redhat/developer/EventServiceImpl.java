@@ -10,17 +10,19 @@ import javax.inject.Inject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.redhat.developer.models.filters.Filter;
+import com.redhat.developer.models.RegistryEvent;
 import com.redhat.developer.models.Subscription;
 import com.redhat.developer.models.Topic;
 import com.redhat.developer.producer.EventProducer;
+import com.redhat.developer.utils.CloudEventUtils;
+import com.redhat.developer.utils.WebClientUtils;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.jackson.JsonCloudEventData;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
-import io.vertx.core.Vertx;
-import io.vertx.ext.web.client.WebClient;
-import io.vertx.ext.web.client.WebClientOptions;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.ext.web.client.WebClient;
+import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
@@ -41,21 +43,33 @@ public class EventServiceImpl implements EventService {
     @Inject
     Vertx vertx;
 
+    @Inject
+    ThreadContext threadContext;
+
     @Override
     public void process(CloudEvent cloudEvent){
         logger.info(String.format("[CE id = %s] Start processing", cloudEvent.getId()));
-        String topicName = cloudEvent.getExtension("topic").toString();
-        Topic topic = topicService.getTopic(topicName);
+        Topic topic = topicService.getTopic(cloudEvent.getExtension("topic").toString());
+        String groupId = cloudEvent.getExtension("mygroupid").toString();
+        String eventId = cloudEvent.getExtension("myeventid").toString();
+
         logger.info(String.format("[CE id = %s] There are %d available subscriptions", cloudEvent.getId(), topic.getSubscriptions().size()));
         for (Subscription subscription : topic.getSubscriptions()){
             logger.info(String.format("[CE id = %s] Processing subscription %s with endpoint %s", cloudEvent.getId(), subscription.getName(), subscription.getEndpoint()));
-            WebClient client = getClient(subscription.getEndpoint());
+            WebClient client = WebClientUtils.getClient(vertx, subscription.getEndpoint());
             JsonCloudEventData data = (JsonCloudEventData) cloudEvent.getData();
             JsonNode dataToSend = data.getNode();
             Map<String, Object> originalMap = CloudEventUtils.Mapper.mapper().convertValue(data.getNode(), new TypeReference<Map<String, Object>>(){});
 
+            if (!subscription.getRegistryEvents().isEmpty()){
+                if (subscription.getRegistryEvents().stream().noneMatch(x -> x.getGroupId().equals(groupId) && x.getEventId().equals(eventId))){
+                    logger.info(String.format("[CE id = %s] Subscription %s does not match event type", cloudEvent.getId(), subscription.getName()));
+                    continue;
+                }
+            }
+
             if (!checkFilters(subscription, originalMap)){
-                logger.info("Filter does not match");
+                logger.info(String.format("[CE id = %s] Subscription %s does not match filters", cloudEvent.getId(), subscription.getName()));
                 continue;
             }
 
@@ -68,17 +82,18 @@ public class EventServiceImpl implements EventService {
                 }
                 logger.info(dataToSend);
             }
-            client.post(
-                    getEndpoint(subscription.getEndpoint()))
-                    .sendJson(dataToSend)
-                    .onComplete(x ->  logger.info(String.format("[CE id = %s] Customer endpoint replied with %d for subscription %s", cloudEvent.getId(), x.result().statusCode(), subscription.getName())));
+            logger.info(String.format("[CE id = %s] Sending webhook", cloudEvent.getId()));
+            threadContext.withContextCapture(client.post(
+                    WebClientUtils.getEndpoint(subscription.getEndpoint()))
+                    .sendJson(dataToSend).onItem().invoke(x -> logger.info(String.format("[CE id = %s] Sending webhook - status code %d", cloudEvent.getId(), x.statusCode()))).subscribeAsCompletionStage());
         }
         logger.info(String.format("[CE id = %s] All subscriptions have been processed", cloudEvent.getId()));
     }
 
     @Override
-    public boolean sendEvent(JsonNode body, String topic) {
-        CloudEvent cloudEvent = CloudEventUtils.build(UUID.randomUUID().toString(), topic, URI.create("http://localhost"), JsonNode.class.getName(), "subject", body).get();
+    public boolean sendEvent(JsonNode body, String topic, RegistryEvent registryEvent) {
+        CloudEvent cloudEvent = CloudEventUtils.build(UUID.randomUUID().toString(), topic, registryEvent,
+                                                      URI.create("http://localhost"), JsonNode.class.getName(), "subject", body).get();
         return producer.sendEvent(cloudEvent);
     }
 
@@ -93,30 +108,4 @@ public class EventServiceImpl implements EventService {
         }
         return true;
     }
-
-    private WebClient getClient(String url){
-        URI uri = URI.create(url);
-        boolean sslEnabled = "https".equalsIgnoreCase(uri.getScheme());
-        int port = uri.getPort();
-        if (port == -1){
-            if (sslEnabled){
-                port = 443;
-            }
-            else{
-                port = 80;
-            }
-        }
-
-        return WebClient.create(vertx, new WebClientOptions()
-                .setDefaultHost(uri.getHost())
-                .setDefaultPort(port)
-                .setSsl(sslEnabled)
-                .setLogActivity(true));
-    }
-
-    private String getEndpoint(String url){
-        URI uri = URI.create(url);
-        return uri.getRawPath();
-    }
-
 }
